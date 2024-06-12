@@ -114,7 +114,21 @@ pub mod game_logic {
                 HashSet::new()
             }
         }
-        
+
+        pub fn mark_mine(&mut self, cell: (usize, usize)) {
+            /* Updates internal knowledge representation given the fact that a cell is known to be a mine */
+            if self.cells.contains(&cell) {
+                self.cells.remove(&cell);
+                self.count -= 1;
+            }
+        }
+
+        pub fn mark_safe(&mut self, cell: (usize, usize)) {
+            /* Updates internal knowledge representation given the fact that a cell is known to be safe */
+            if self.cells.contains(&cell) {
+                self.cells.remove(&cell);
+            }
+        }
     }
     // Implementing equality comparsion
     impl PartialEq for Sentence {
