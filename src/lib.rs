@@ -4,6 +4,8 @@ Minesweeper Gaming Logic
 
 pub mod game_logic {
     use core::fmt;
+    use rand::seq::SliceRandom;
+    use rand::thread_rng;
     use rand::Rng;
     use std::collections::HashSet;
 
@@ -182,7 +184,7 @@ pub mod game_logic {
             }
         }
 
-        pub fn add_knowledge(&mut self, cell: Cell, count: usize) {
+        pub fn add_knowledge(&mut self, cell: Cell, mut count: usize) {
             /* Called when the Minesweeper board tells us, for a given
             safe cell, how many neighboring cells have mines in them.
 
@@ -205,13 +207,116 @@ pub mod game_logic {
 
             // Step 3: Add sentence to knowledge base by adding neighboring cells to a set
             let mut set_cells: HashSet<Cell> = HashSet::new();
-            // TODO
 
-            // Step 4: Add cells and updated mine count to knowledge base
-            self.knowledge.push(Sentence::new(set_cells, count));
+            for i in cell.0.saturating_sub(1)..=(cell.0 + 1).min(self.height - 1) {
+                for j in cell.1.saturating_sub(1)..=(cell.1 + 1).min(self.width - 1) {
+                    // Ignore the cell itself
+                    if (i, j) == cell {
+                        continue;
+                    }
+                    // Add cell to set if cell is undetermined
+                    if !self.moves_made.contains(&(i, j))
+                        && !self.known_safes.contains(&(i, j))
+                        && !self.known_mines.contains(&(i, j))
+                    {
+                        set_cells.insert((i, j));
+                    }
+                    // Adjust count if cell is a known mine
+                    if self.known_mines.contains(&(i, j)) {
+                        count -= 1;
+                    }
+                }
+            }
+            // Add cells and updated mine count to knowledge base
+            if !set_cells.is_empty() {
+                self.knowledge.push(Sentence::new(set_cells, count));
+            }
 
+            // Loop to update knowledge until there are no more changes
+            let mut changes = true;
+            while changes {
+                changes = false;
 
+                // Step 4: Mark additional cells as safe or mines if it can be included
+                let mut safes_to_mark = Vec::new();
+                let mut mines_to_mark = Vec::new();
 
+                for sentence in &self.knowledge {
+                    let known_safes: HashSet<(usize, usize)> = sentence.known_safes().clone();
+                    let known_mines: HashSet<(usize, usize)> = sentence.known_mines().clone();
+
+                    if !known_safes.is_empty() {
+                        safes_to_mark.extend(known_safes);
+                        changes = true;
+                    }
+                    if !known_mines.is_empty() {
+                        mines_to_mark.extend(known_mines);
+                        changes = true;
+                    }
+                }
+                // Apply collected changes
+                for safe in safes_to_mark {
+                    self.mark_safe(safe);
+                }
+                for mine in mines_to_mark {
+                    self.mark_mine(mine);
+                }
+
+                // Remove any empty sentences from knowledge base
+                self.knowledge.retain(|sentence| !sentence.cells.is_empty());
+
+                // Step 5: Add new sentences based on inferred subset method
+                let knowledge_snapshot = self.knowledge.clone();
+                let mut new_knowledge = Vec::new();
+                for s1 in &knowledge_snapshot {
+                    for s2 in &knowledge_snapshot {
+                        if s1 == s2 {
+                            continue;
+                        }
+                        if s2.cells.is_subset(&s1.cells) {
+                            let difference: HashSet<Cell> =
+                                s1.cells.difference(&s2.cells).cloned().collect();
+                            if !difference.is_empty() {
+                                new_knowledge.push(Sentence::new(difference, s1.count - s2.count));
+                                changes = true;
+                            }
+                        }
+                    }
+                }
+                self.knowledge.extend(new_knowledge);
+            }
+        }
+
+        pub fn make_safe_move(&self) -> Option<Cell> {
+            /*
+            Returns a safe cell to choose on the Minesweeper board.
+            The move must be known to be safe, and not already a move
+            that has been made.
+
+            This function may use the knowledge in self.mines, self.safes
+            and self.moves_made, but should not modify any of those values.
+            */
+            for i in 0..self.height {
+                for j in 0..self.width {
+                    if !self.moves_made.contains(&(i, j)) && self.known_safes.contains(&(i, j)) {
+                        return Some((i, j));
+                    }
+                }
+            }
+            None
+        }
+
+        pub fn make_random_move(&self) -> Option<Cell> {
+            let mut random_moves = Vec::new();
+            for i in 0..self.height {
+                for j in 0..self.width {
+                    if !self.moves_made.contains(&(i, j)) && !self.known_mines.contains(&(i, j)) {
+                        random_moves.push((i, j));
+                    }
+                }
+            }
+            let mut rng = thread_rng();
+            random_moves.choose(&mut rng).cloned()
         }
     }
 }
