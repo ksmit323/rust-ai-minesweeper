@@ -263,7 +263,7 @@ class MinesweeperAI():
                         counter1 = 0
                         counter2 = 0
 
-            # Delete any empty setences from knowledge base
+            # Delete any empty sentences from knowledge base
             for sentence in self.knowledge.copy():
                 if len(sentence.cells) == 0:
                     self.knowledge.remove(sentence)

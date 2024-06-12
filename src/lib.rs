@@ -142,4 +142,76 @@ pub mod game_logic {
             write!(f, "{:?} = {}", self.cells, self.count)
         }
     }
+
+    type Cell = (usize, usize);
+
+    struct MinesweeperAI {
+        height: usize,
+        width: usize,
+        moves_made: HashSet<Cell>,
+        known_mines: HashSet<Cell>,
+        known_safes: HashSet<Cell>,
+        knowledge: Vec<Sentence>,
+    }
+
+    impl MinesweeperAI {
+        pub fn new(height: usize, width: usize) -> MinesweeperAI {
+            MinesweeperAI {
+                height,
+                width,
+                moves_made: HashSet::new(),
+                known_mines: HashSet::new(),
+                known_safes: HashSet::new(),
+                knowledge: Vec::new(),
+            }
+        }
+
+        pub fn mark_mine(&mut self, cell: Cell) {
+            /* Marks a cell as a mine and updates all knowledge to mark that cell as a mine as well */
+            self.known_mines.insert(cell);
+            for sentence in &mut self.knowledge {
+                sentence.mark_mine(cell);
+            }
+        }
+
+        pub fn mark_safe(&mut self, cell: Cell) {
+            /* Marks a cell as safe, and updates all knowledge to mark that cell as safe as well */
+            self.known_safes.insert(cell);
+            for sentence in &mut self.knowledge {
+                sentence.mark_safe(cell);
+            }
+        }
+
+        pub fn add_knowledge(&mut self, cell: Cell, count: usize) {
+            /* Called when the Minesweeper board tells us, for a given
+            safe cell, how many neighboring cells have mines in them.
+
+            This function should:
+                1) mark the cell as a move that has been made
+                2) mark the cell as safe
+                3) add a new sentence to the AI's knowledge base
+                   based on the value of `cell` and `count`
+                4) mark any additional cells as safe or as mines
+                   if it can be concluded based on the AI's knowledge base
+                5) add any new sentences to the AI's knowledge base
+                   if they can be inferred from existing knowledge
+            */
+
+            // Step 1: Add cell to moves_made set
+            self.moves_made.insert(cell);
+
+            // Step 2: Mark cell as safe
+            self.mark_safe(cell);
+
+            // Step 3: Add sentence to knowledge base by adding neighboring cells to a set
+            let mut set_cells: HashSet<Cell> = HashSet::new();
+            // TODO
+
+            // Step 4: Add cells and updated mine count to knowledge base
+            self.knowledge.push(Sentence::new(set_cells, count));
+
+
+
+        }
+    }
 }
