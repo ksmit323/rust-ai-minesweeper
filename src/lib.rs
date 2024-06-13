@@ -9,7 +9,7 @@ pub mod game_logic {
     use rand::Rng;
     use std::collections::HashSet;
 
-    struct Minesweeper {
+    pub struct Minesweeper {
         height: usize,
         width: usize,
         mines: HashSet<(usize, usize)>,
@@ -83,7 +83,7 @@ pub mod game_logic {
     }
 
     #[derive(Debug, Clone)]
-    struct Sentence {
+    pub struct Sentence {
         /* Logical statement about a  Minesweeper game
         A sentence consists of a set of board cells,
         and a count of the number of those cells which are mines.*/
@@ -147,7 +147,7 @@ pub mod game_logic {
 
     type Cell = (usize, usize);
 
-    struct MinesweeperAI {
+    pub struct MinesweeperAI {
         height: usize,
         width: usize,
         moves_made: HashSet<Cell>,
