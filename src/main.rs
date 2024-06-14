@@ -1,3 +1,4 @@
+use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color, DrawMode, Mesh, PxScale, Rect, Text, TextFragment};
 use ggez::*;
 use rust_ai_minesweeper::game_logic::*;
@@ -12,7 +13,17 @@ struct State {
     board: [[bool; HEIGHT]; WIDTH],
 }
 
-impl ggez::event::EventHandler<GameError> for State {
+impl State {
+    pub fn new(height: usize, width: usize, num_of_mines: usize) -> Self {
+        Self {
+            game: Minesweeper::new(height, width, num_of_mines),
+            ai: MinesweeperAI::new(height, width),
+            board: [[false; HEIGHT]; WIDTH],
+        }
+    }
+}
+
+impl EventHandler for State {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         Ok(())
     }
@@ -54,7 +65,7 @@ impl ggez::event::EventHandler<GameError> for State {
                 // Draw the number of mines in each square
                 let num_of_mines = self.game.nearby_mines((i, j)).to_string();
                 if self.board[i][j] {
-                    let mut text = Text::new(TextFragment {
+                    let text = Text::new(TextFragment {
                         text: num_of_mines,
                         color: Some(Color::BLACK),
                         font: Some("LiberationMono-Regular".into()),
@@ -67,6 +78,58 @@ impl ggez::event::EventHandler<GameError> for State {
                 }
             }
         }
+
+        let rect_length = 150.0;
+        let rect_width = 50.0;
+
+        // Draw AI move button
+        let x_ai_button = 450.0;
+        let y_ai_button = 50.0;
+        let x_text = x_ai_button + 20.0;
+        let y_text = y_ai_button + 10.0;
+        let ai_button = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(x_ai_button, y_ai_button, rect_length, rect_width),
+            Color::WHITE,
+        )?;
+        canvas.draw(&ai_button, graphics::DrawParam::default());
+
+        let ai_text = Text::new(TextFragment {
+            text: "AI Move".to_string(),
+            color: Some(Color::BLACK),
+            font: Some("LiberationMono-Regular".into()),
+            scale: Some(PxScale::from(30.0)),
+        });
+        canvas.draw(
+            &ai_text,
+            graphics::DrawParam::default().dest([x_text, y_text]),
+        );
+
+        // Draw the reset button
+        let x_reset_button = x_ai_button;
+        let y_reset_button = y_ai_button + 75.0;
+        let x_text = x_reset_button + 30.0;
+        let y_text = y_reset_button + 10.0;
+        let reset_button = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(x_reset_button, y_reset_button, rect_length, rect_width),
+            Color::WHITE,
+        )?;
+        canvas.draw(&reset_button, graphics::DrawParam::default());
+
+        let reset_text = Text::new(TextFragment {
+            text: "Reset".to_string(),
+            color: Some(Color::BLACK),
+            font: Some("LiberationMono-Regular".into()),
+            scale: Some(PxScale::from(30.0)),
+        });
+        canvas.draw(
+            &reset_text,
+            graphics::DrawParam::default().dest([x_text, y_text]),
+        );
+
         canvas.finish(ctx)?;
         Ok(())
     }
@@ -80,11 +143,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let state = State {
-        game: Minesweeper::new(HEIGHT, WIDTH, NUM_MINES),
-        ai: MinesweeperAI::new(HEIGHT, WIDTH),
-        board: [[false; HEIGHT]; WIDTH],
-    };
+    let state = State::new(HEIGHT, WIDTH, NUM_MINES);
 
     // Launch the game by starting the event loop
     event::run(ctx, event_loop, state);
