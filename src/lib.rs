@@ -12,9 +12,9 @@ pub mod game_logic {
     pub struct Minesweeper {
         pub height: usize,
         pub width: usize,
-        mines: HashSet<(usize, usize)>,
-        mines_found: HashSet<(usize, usize)>,
-        board: Vec<Vec<bool>>,
+        pub mines: HashSet<(usize, usize)>,
+        pub mines_found: HashSet<(usize, usize)>,
+        pub board: Vec<Vec<bool>>,
     }
 
     impl Minesweeper {
@@ -60,7 +60,7 @@ pub mod game_logic {
             self.board[i][j]
         }
 
-        pub fn nearby_mines(&self, cell: (usize, usize)) -> i32 {
+        pub fn nearby_mines(&self, cell: (usize, usize)) -> usize {
             /* Returns the number of mines that are within one row and column of a give cell, not including the cell itself */
 
             let (x, y) = cell;
@@ -148,12 +148,12 @@ pub mod game_logic {
     type Cell = (usize, usize);
 
     pub struct MinesweeperAI {
-        height: usize,
-        width: usize,
-        moves_made: HashSet<Cell>,
-        known_mines: HashSet<Cell>,
-        known_safes: HashSet<Cell>,
-        knowledge: Vec<Sentence>,
+        pub height: usize,
+        pub width: usize,
+        pub moves_made: HashSet<Cell>,
+        pub known_mines: HashSet<Cell>,
+        pub known_safes: HashSet<Cell>,
+        pub knowledge: Vec<Sentence>,
     }
 
     impl MinesweeperAI {

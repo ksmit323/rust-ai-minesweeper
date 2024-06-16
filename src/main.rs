@@ -2,15 +2,21 @@ use ggez::event::{self, EventHandler, MouseButton};
 use ggez::graphics::{self, Color, DrawMode, Mesh, PxScale, Rect, Text, TextFragment};
 use ggez::*;
 use rust_ai_minesweeper::game_logic::*;
+use std::collections::HashSet;
+use std::thread;
+use std::time::Duration;
 
 const HEIGHT: usize = 8;
 const WIDTH: usize = 8;
 const NUM_MINES: usize = 8;
+const TILE_SIZE: f32 = 50.0;
 
 struct State {
     game: Minesweeper,
     ai: MinesweeperAI,
-    board: [[bool; HEIGHT]; WIDTH],
+    revealed: HashSet<(usize, usize)>,
+    flags: HashSet<(usize, usize)>,
+    lost: bool,
 }
 
 impl State {
@@ -18,7 +24,9 @@ impl State {
         Self {
             game: Minesweeper::new(height, width, num_of_mines),
             ai: MinesweeperAI::new(height, width),
-            board: [[false; HEIGHT]; WIDTH],
+            revealed: HashSet::new(),
+            flags: HashSet::new(),
+            lost: false,
         }
     }
 }
@@ -32,18 +40,17 @@ impl EventHandler for State {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
         // Draw the board
-        let tile_size = 50.0;
         let margin = 3.0; // margin between each square
         for i in 0..HEIGHT {
             for j in 0..WIDTH {
-                let x = j as f32 * tile_size;
-                let y = i as f32 * tile_size;
+                let x = j as f32 * TILE_SIZE;
+                let y = i as f32 * TILE_SIZE;
 
                 // Draw the outer rectangle (border)
                 let outer_rect = Mesh::new_rectangle(
                     ctx,
                     DrawMode::stroke(1.0),
-                    Rect::new(x, y, tile_size, tile_size),
+                    Rect::new(x, y, TILE_SIZE, TILE_SIZE),
                     Color::WHITE,
                 )?;
                 canvas.draw(&outer_rect, graphics::DrawParam::default());
@@ -55,8 +62,8 @@ impl EventHandler for State {
                     Rect::new(
                         x + margin,
                         y + margin,
-                        tile_size - margin * 2.0,
-                        tile_size - margin * 2.0,
+                        TILE_SIZE - margin * 2.0,
+                        TILE_SIZE - margin * 2.0,
                     ),
                     Color::from_rgb(125, 125, 125),
                 )?;
@@ -64,7 +71,7 @@ impl EventHandler for State {
 
                 // Draw the number of mines in each square
                 let num_of_mines = self.game.nearby_mines((i, j)).to_string();
-                if self.board[i][j] {
+                if self.revealed.contains(&(i, j)) {
                     let text = Text::new(TextFragment {
                         text: num_of_mines,
                         color: Some(Color::BLACK),
@@ -141,13 +148,54 @@ impl EventHandler for State {
         y: f32,
     ) -> GameResult {
         if button == MouseButton::Left {
-            let col = (x / 30.0) as usize;
-            let row = (y / 30.0) as usize;
-            if row < self.game.height && col < self.game.width {
-                self.board[row][col] = true;
+            let mut mv: Option<(usize, usize)> = None;
+
+            let px_height = HEIGHT as f32 * TILE_SIZE;
+            let px_width = WIDTH as f32 * TILE_SIZE;
+
+            // human player made the move
+            if x >= 0.0 && x <= px_height && y >= 0.0 && y <= px_width {
+                let col = (x / TILE_SIZE) as usize;
+                let row = (y / TILE_SIZE) as usize;
+                if !self.flags.contains(&(row, col)) && !self.revealed.contains(&(row, col)) {
+                    mv = Some((row, col));
+                }
+            }
+
+            // AI Move button clicked
+            if x >= 450.0 && x <= 600.0 && y >= 50.0 && y <= 100.0 && !self.lost {
+                if let Some(ai_move) = self
+                    .ai
+                    .make_safe_move()
+                    .or_else(|| self.ai.make_random_move())
+                {
+                    mv = Some(ai_move);
+                } else {
+                    self.flags = self.ai.known_mines.clone();
+                }
+                thread::sleep(Duration::from_millis(200));
+            }
+
+            // Reset button clicked
+            if x >= 450.0 && x <= 600.0 && y >= 125.0 && y <= 175.0 {
+                self.revealed = HashSet::new();
+                self.flags = HashSet::new();
+                self.lost = false;
+                self.game = Minesweeper::new(HEIGHT, WIDTH, NUM_MINES);
+                self.ai = MinesweeperAI::new(HEIGHT, WIDTH);
+                return Ok(());
+            }
+
+            // Make move and update knowledge
+            if let Some(mv) = mv {
+                if self.game.is_mine(mv) {
+                    self.lost = true;
+                } else {
+                    self.revealed.insert(mv);
+                    self.ai.add_knowledge(mv, self.game.nearby_mines(mv))
+                }
             }
         }
-
         Ok(())
     }
 }
