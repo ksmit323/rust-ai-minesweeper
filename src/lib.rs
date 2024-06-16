@@ -10,8 +10,8 @@ pub mod game_logic {
     use std::collections::HashSet;
 
     pub struct Minesweeper {
-        height: usize,
-        width: usize,
+        pub height: usize,
+        pub width: usize,
         mines: HashSet<(usize, usize)>,
         mines_found: HashSet<(usize, usize)>,
         board: Vec<Vec<bool>>,

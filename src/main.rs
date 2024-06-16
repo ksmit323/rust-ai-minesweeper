@@ -1,4 +1,4 @@
-use ggez::event::{self, EventHandler};
+use ggez::event::{self, EventHandler, MouseButton};
 use ggez::graphics::{self, Color, DrawMode, Mesh, PxScale, Rect, Text, TextFragment};
 use ggez::*;
 use rust_ai_minesweeper::game_logic::*;
@@ -79,10 +79,9 @@ impl EventHandler for State {
             }
         }
 
+        // Draw AI move button
         let rect_length = 150.0;
         let rect_width = 50.0;
-
-        // Draw AI move button
         let x_ai_button = 450.0;
         let y_ai_button = 50.0;
         let x_text = x_ai_button + 20.0;
@@ -131,6 +130,24 @@ impl EventHandler for State {
         );
 
         canvas.finish(ctx)?;
+        Ok(())
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
+        if button == MouseButton::Left {
+            let col = (x / 30.0) as usize;
+            let row = (y / 30.0) as usize;
+            if row < self.game.height && col < self.game.width {
+                self.board[row][col] = true;
+            }
+        }
+
         Ok(())
     }
 }
