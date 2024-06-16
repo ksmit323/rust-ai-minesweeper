@@ -18,8 +18,8 @@ struct State {
     flags: HashSet<(usize, usize)>,
     lost: bool,
     instructions: bool,
-    // flag_image: Image,
-    // mine_image: Image,
+    flag_image: Image,
+    mine_image: Image,
 }
 
 impl State {
@@ -31,16 +31,8 @@ impl State {
             flags: HashSet::new(),
             lost: false,
             instructions: false,
-            // flag_image: Image::from_path(
-            //     ctx,
-            //     "/home/kss/coding/rust-ai-minesweeper/assets/images/flag.png",
-            // )
-            // .unwrap(),
-            // mine_image: Image::from_path(
-            //     ctx,
-            //     "/home/kss/coding/rust-ai-minesweeper/assets/images/mine.png",
-            // )
-            // .unwrap(),
+            flag_image: Image::from_path(ctx, "/flag.png").unwrap(),
+            mine_image: Image::from_path(ctx, "/mine.png").unwrap(),
         }
     }
 }
@@ -53,7 +45,7 @@ impl EventHandler for State {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
-        // TODO: add condition to draw board only if self.instructions is set to false
+        // TODO: add instructions before drawing board
 
         // Draw the board
         let margin = 3.0; // margin between each square
@@ -97,29 +89,43 @@ impl EventHandler for State {
                         &text,
                         graphics::DrawParam::default().dest([x + 15.0, y + 10.0]),
                     );
+
                 // Draw flags
                 } else if self.flags.contains(&(i, j)) {
-                    let text = Text::new(TextFragment {
-                        text: "F".to_string(),
-                        color: Some(Color::BLACK),
-                        font: Some("LiberationMono-Regular".into()),
-                        scale: Some(PxScale::from(30.0)),
-                    });
+                    // let text = Text::new(TextFragment {
+                    //     text: "F".to_string(),
+                    //     color: Some(Color::BLACK),
+                    //     font: Some("LiberationMono-Regular".into()),
+                    //     scale: Some(PxScale::from(30.0)),
+                    // });
+                    let scale = [
+                        TILE_SIZE / self.flag_image.width() as f32,
+                        TILE_SIZE / self.flag_image.height() as f32,
+                    ];
                     canvas.draw(
-                        &text,
-                        graphics::DrawParam::default().dest([x + 15.0, y + 10.0]),
+                        &self.flag_image,
+                        graphics::DrawParam::default()
+                            .dest([x, y])
+                            .scale(scale),
                     );
+
                 // Draw mines
                 } else if self.game.is_mine((i, j)) && self.lost {
-                    let text = Text::new(TextFragment {
-                        text: "M".to_string(),
-                        color: Some(Color::BLACK),
-                        font: Some("LiberationMono-Regular".into()),
-                        scale: Some(PxScale::from(30.0)),
-                    });
+                    // let text = Text::new(TextFragment {
+                    //     text: "M".to_string(),
+                    //     color: Some(Color::BLACK),
+                    //     font: Some("LiberationMono-Regular".into()),
+                    //     scale: Some(PxScale::from(30.0)),
+                    // });
+                    let scale = [
+                        TILE_SIZE / self.mine_image.width() as f32,
+                        TILE_SIZE / self.mine_image.height() as f32,
+                    ];
                     canvas.draw(
-                        &text,
-                        graphics::DrawParam::default().dest([x + 15.0, y + 10.0]),
+                        &self.mine_image,
+                        graphics::DrawParam::default()
+                            .dest([x, y])
+                            .scale(scale),
                     );
                 }
             }
@@ -271,6 +277,7 @@ fn main() {
     let c = conf::Conf::new();
     let (mut ctx, event_loop) = ContextBuilder::new("Minesweeper", "Ken")
         .default_conf(c)
+        .add_resource_path("./resources")
         .build()
         .unwrap();
 
