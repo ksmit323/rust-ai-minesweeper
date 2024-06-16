@@ -3,8 +3,6 @@ use ggez::graphics::{self, Color, DrawMode, Image, Mesh, PxScale, Rect, Text, Te
 use ggez::*;
 use rust_ai_minesweeper::game_logic::*;
 use std::collections::HashSet;
-use std::thread;
-use std::time::Duration;
 
 const HEIGHT: usize = 8;
 const WIDTH: usize = 8;
@@ -233,7 +231,6 @@ impl EventHandler for State {
                 } else {
                     self.flags = self.ai.known_mines.clone();
                 }
-                thread::sleep(Duration::from_millis(200));
             }
 
             // Reset button clicked

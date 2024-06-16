@@ -227,14 +227,15 @@ pub mod game_logic {
                     }
                 }
             }
+
             // Add cells and updated mine count to knowledge base
             if !set_cells.is_empty() {
-                self.knowledge.push(Sentence::new(set_cells, count));
+                self.knowledge.push(Sentence::new(set_cells.clone(), count));
             }
 
             // Loop to update knowledge until there are no more changes
             let mut changes = true;
-            while changes {
+            while changes{
                 changes = false;
 
                 // Step 4: Mark additional cells as safe or mines if it can be included
@@ -268,17 +269,20 @@ pub mod game_logic {
                 // Step 5: Add new sentences based on inferred subset method
                 let knowledge_snapshot = self.knowledge.clone();
                 let mut new_knowledge = Vec::new();
+
                 for s1 in &knowledge_snapshot {
                     for s2 in &knowledge_snapshot {
-                        if s1 == s2 {
+                        if s1 == s2 || s1.cells.is_subset(&s2.cells) {
                             continue;
                         }
                         if s2.cells.is_subset(&s1.cells) {
-                            let difference: HashSet<Cell> =
-                                s1.cells.difference(&s2.cells).cloned().collect();
-                            if !difference.is_empty() {
-                                new_knowledge.push(Sentence::new(difference, s1.count - s2.count));
-                                changes = true;
+                            let difference: HashSet<Cell> = s1.cells.difference(&s2.cells).cloned().collect();
+                            if !difference.is_empty() && difference.len() < s1.cells.len() {
+                                let new_sentence = Sentence::new(difference, s1.count - s2.count);
+                                if !self.knowledge.contains(&new_sentence) && !new_knowledge.contains(&new_sentence) {
+                                    new_knowledge.push(new_sentence);
+                                    changes = true;
+                                }
                             }
                         }
                     }
