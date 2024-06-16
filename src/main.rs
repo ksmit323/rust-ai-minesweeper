@@ -17,6 +17,7 @@ struct State {
     revealed: HashSet<(usize, usize)>,
     flags: HashSet<(usize, usize)>,
     lost: bool,
+    instructions: bool,
 }
 
 impl State {
@@ -27,6 +28,7 @@ impl State {
             revealed: HashSet::new(),
             flags: HashSet::new(),
             lost: false,
+            instructions: false,
         }
     }
 }
@@ -38,6 +40,8 @@ impl EventHandler for State {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
+
+        // TODO: add condition to draw board only if self.instructions is set to false
 
         // Draw the board
         let margin = 3.0; // margin between each square
@@ -69,11 +73,34 @@ impl EventHandler for State {
                 )?;
                 canvas.draw(&inner_rect, graphics::DrawParam::default());
 
-                // Draw the number of mines in each square
-                let num_of_mines = self.game.nearby_mines((i, j)).to_string();
+                // Draw number
                 if self.revealed.contains(&(i, j)) {
                     let text = Text::new(TextFragment {
-                        text: num_of_mines,
+                        text: self.game.nearby_mines((i, j)).to_string(),
+                        color: Some(Color::BLACK),
+                        font: Some("LiberationMono-Regular".into()),
+                        scale: Some(PxScale::from(30.0)),
+                    });
+                    canvas.draw(
+                        &text,
+                        graphics::DrawParam::default().dest([x + 15.0, y + 10.0]),
+                    );
+                // Draw flags
+                } else if self.flags.contains(&(i, j)) {
+                    let text = Text::new(TextFragment {
+                        text: "F".to_string(),
+                        color: Some(Color::BLACK),
+                        font: Some("LiberationMono-Regular".into()),
+                        scale: Some(PxScale::from(30.0)),
+                    });
+                    canvas.draw(
+                        &text,
+                        graphics::DrawParam::default().dest([x + 15.0, y + 10.0]),
+                    );
+                // Draw mines
+                } else if self.game.is_mine((i, j)) && self.lost {
+                    let text = Text::new(TextFragment {
+                        text: "M".to_string(),
                         color: Some(Color::BLACK),
                         font: Some("LiberationMono-Regular".into()),
                         scale: Some(PxScale::from(30.0)),
@@ -183,6 +210,7 @@ impl EventHandler for State {
                 self.lost = false;
                 self.game = Minesweeper::new(HEIGHT, WIDTH, NUM_MINES);
                 self.ai = MinesweeperAI::new(HEIGHT, WIDTH);
+                self.instructions = true;
                 return Ok(());
             }
 
@@ -193,6 +221,17 @@ impl EventHandler for State {
                 } else {
                     self.revealed.insert(mv);
                     self.ai.add_knowledge(mv, self.game.nearby_mines(mv))
+                }
+            }
+        }
+        if button == MouseButton::Right {
+            let col = (x / TILE_SIZE) as usize;
+            let row = (y / TILE_SIZE) as usize;
+            if row < HEIGHT && col < WIDTH {
+                if self.game.is_mine((row, col)) {
+                    self.flags.insert((row, col));
+                } else {
+                    self.lost = true;
                 }
             }
         }
