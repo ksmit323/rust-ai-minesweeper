@@ -1,5 +1,5 @@
 use ggez::event::{self, EventHandler, MouseButton};
-use ggez::graphics::{self, Color, DrawMode, Mesh, PxScale, Rect, Text, TextFragment};
+use ggez::graphics::{self, Color, DrawMode, Image, Mesh, PxScale, Rect, Text, TextFragment};
 use ggez::*;
 use rust_ai_minesweeper::game_logic::*;
 use std::collections::HashSet;
@@ -18,10 +18,12 @@ struct State {
     flags: HashSet<(usize, usize)>,
     lost: bool,
     instructions: bool,
+    // flag_image: Image,
+    // mine_image: Image,
 }
 
 impl State {
-    pub fn new(height: usize, width: usize, num_of_mines: usize) -> Self {
+    pub fn new(ctx: &mut Context, height: usize, width: usize, num_of_mines: usize) -> Self {
         Self {
             game: Minesweeper::new(height, width, num_of_mines),
             ai: MinesweeperAI::new(height, width),
@@ -29,6 +31,16 @@ impl State {
             flags: HashSet::new(),
             lost: false,
             instructions: false,
+            // flag_image: Image::from_path(
+            //     ctx,
+            //     "/home/kss/coding/rust-ai-minesweeper/assets/images/flag.png",
+            // )
+            // .unwrap(),
+            // mine_image: Image::from_path(
+            //     ctx,
+            //     "/home/kss/coding/rust-ai-minesweeper/assets/images/mine.png",
+            // )
+            // .unwrap(),
         }
     }
 }
@@ -163,6 +175,21 @@ impl EventHandler for State {
             graphics::DrawParam::default().dest([x_text, y_text]),
         );
 
+        // Draw winner or loser text
+        if self.lost {
+            let mut text = graphics::Text::new("Loser!");
+            text.set_scale(200.0);
+            let dest_point = [125.0, 400.0];
+            canvas.draw(&text, graphics::DrawParam::default().dest(dest_point));
+        } else {
+            if self.game.mines == self.flags {
+                let mut text = graphics::Text::new("Winner!");
+                text.set_scale(200.0);
+                let dest_point = [75.0, 400.0];
+                canvas.draw(&text, graphics::DrawParam::default().dest(dest_point));
+            }
+        }
+
         canvas.finish(ctx)?;
         Ok(())
     }
@@ -242,12 +269,12 @@ impl EventHandler for State {
 fn main() {
     // Make context and an event loop
     let c = conf::Conf::new();
-    let (ctx, event_loop) = ContextBuilder::new("Minesweeper", "Ken")
+    let (mut ctx, event_loop) = ContextBuilder::new("Minesweeper", "Ken")
         .default_conf(c)
         .build()
         .unwrap();
 
-    let state = State::new(HEIGHT, WIDTH, NUM_MINES);
+    let state = State::new(&mut ctx, HEIGHT, WIDTH, NUM_MINES);
 
     // Launch the game by starting the event loop
     event::run(ctx, event_loop, state);
